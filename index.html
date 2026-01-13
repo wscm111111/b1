@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>符石战斗</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 关卡选择界面 -->
+    <div class="level-select-screen" id="levelSelectScreen" style="display: none;">
+        <div class="level-select-container">
+            <h1 class="level-select-title">选择关卡</h1>
+            <div class="levels-list" id="levelsList">
+                <!-- 关卡列表将通过JS动态生成 -->
+            </div>
+            <button class="btn-reload-config" id="reloadConfigBtn">重新加载配置</button>
+            <button class="btn-back-to-game" id="backToGameBtn">返回游戏</button>
+        </div>
+    </div>
+
+    <div class="game-container" id="gameContainer">
+        <!-- 敌人区域 -->
+        <div class="enemy-section">
+            <div class="resources">
+                <span class="resource-item">📦 3</span>
+                <span class="resource-item">💰 1512</span>
+            </div>
+            <div class="enemy-info">
+                <div class="enemy-name">暗影巫妖</div>
+                <div class="enemy-hp-bar">
+                    <div class="hp-fill" id="enemyHpFill"></div>
+                    <span class="hp-text" id="enemyHpText">50000/50000</span>
+                </div>
+            </div>
+            <div class="enemy-sprite">
+                <div class="boss-character">👹</div>
+            </div>
+        </div>
+
+        <!-- 英雄区域 -->
+        <div class="hero-section">
+            <div class="heroes-row" id="heroesRow">
+                <!-- 英雄头像将通过JS动态生成 -->
+            </div>
+            <div class="player-hp-bar">
+                <div class="hp-fill" id="playerHpFill"></div>
+                <span class="hp-text" id="playerHpText">34277/34277</span>
+            </div>
+        </div>
+
+        <!-- 符石棋盘区域 -->
+        <div class="board-section">
+            <div class="board-container">
+                <div class="gem-board" id="gemBoard">
+                    <!-- 符石将通过JS动态生成 -->
+                </div>
+            </div>
+            <!-- 技能范围预览区域 -->
+            <div class="skill-preview-panel" id="skillPreviewPanel">
+                <div class="preview-title">技能范围</div>
+                <div class="preview-grid" id="previewGrid">
+                    <!-- 预览网格将通过JS动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏信息显示 -->
+        <div class="game-info">
+            <div class="turn-indicator" id="turnIndicator">选择英雄释放技能</div>
+            <div class="damage-display" id="damageDisplay"></div>
+        </div>
+        
+        <!-- 关卡选择按钮 -->
+        <button class="btn-back-to-levels" id="backToLevelsBtn">选择关卡</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

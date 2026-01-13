@@ -1,0 +1,122 @@
+{
+  "levels": [
+    {
+      "id": 1,
+      "name": "第一关：暗影巫妖",
+      "description": "初入黑暗之地，遭遇强大的暗影巫妖",
+      "enemy": {
+        "id": "shadow_lich",
+        "name": "暗影巫妖",
+        "emoji": "👹",
+        "maxHp": 500,
+        "minDamage": 500,
+        "maxDamage": 1000,
+        "attackCooldown": 1
+      },
+      "player": {
+        "maxHp": 10000
+      },
+      "rewards": {
+        "gold": 100,
+        "exp": 50
+      }
+    },
+    {
+      "id": 2,
+      "name": "第二关：火焰恶魔",
+      "description": "烈焰地狱的守护者，拥有强大的火焰力量",
+      "enemy": {
+        "id": "fire_demon",
+        "name": "火焰恶魔",
+        "emoji": "🔥",
+        "maxHp": 750,
+        "minDamage": 800,
+        "maxDamage": 1500,
+        "attackCooldown": 1
+      },
+      "player": {
+        "maxHp": 40000
+      },
+      "rewards": {
+        "gold": 200,
+        "exp": 100
+      }
+    },
+    {
+      "id": 3,
+      "name": "第三关：冰霜巨龙",
+      "description": "极地冰原的霸主，掌控着寒冰之力",
+      "enemy": {
+        "id": "frost_dragon",
+        "name": "冰霜巨龙",
+        "emoji": "🐉",
+        "maxHp": 1000,
+        "minDamage": 1200,
+        "maxDamage": 2000,
+        "attackCooldown": 1
+      },
+      "player": {
+        "maxHp": 5000
+      },
+      "rewards": {
+        "gold": 350,
+        "exp": 200
+      }
+    },
+    {
+      "id": 4,
+      "name": "第四关：暗黑魔王",
+      "description": "黑暗的最终化身，拥有毁灭性的力量",
+      "enemy": {
+        "id": "dark_lord",
+        "name": "暗黑魔王",
+        "emoji": "👑",
+        "maxHp": 1500,
+        "minDamage": 2000,
+        "maxDamage": 3000,
+        "attackCooldown": 1
+      },
+      "player": {
+        "maxHp": 6000
+      },
+      "rewards": {
+        "gold": 500,
+        "exp": 300
+      }
+    }
+  ],
+  "enemies": {
+    "shadow_lich": {
+      "name": "暗影巫妖",
+      "emoji": "👹",
+      "description": "被黑暗力量侵蚀的古代法师",
+      "baseHp": 500,
+      "baseMinDamage": 500,
+      "baseMaxDamage": 1000
+    },
+    "fire_demon": {
+      "name": "火焰恶魔",
+      "emoji": "🔥",
+      "description": "来自烈焰地狱的恶魔",
+      "baseHp": 750,
+      "baseMinDamage": 800,
+      "baseMaxDamage": 1500
+    },
+    "frost_dragon": {
+      "name": "冰霜巨龙",
+      "emoji": "🐉",
+      "description": "掌控寒冰之力的古老巨龙",
+      "baseHp": 1000,
+      "baseMinDamage": 1200,
+      "baseMaxDamage": 2000
+    },
+    "dark_lord": {
+      "name": "暗黑魔王",
+      "emoji": "👑",
+      "description": "黑暗势力的最终统治者",
+      "baseHp": 1500,
+      "baseMinDamage": 2000,
+      "baseMaxDamage": 3000
+    }
+  }
+}
