@@ -28,6 +28,7 @@ const GAME_CONFIG = {
 // 游戏配置数据
 let gameConfigData = null;
 let currentLevel = null;
+let playerMaxHp = 10000; // 玩家最大生命值（全局配置）
 
 // 游戏状态
 const gameState = {
@@ -45,45 +46,116 @@ const gameState = {
 
 // 英雄配置
 const heroesConfig = [
-    { id: 0, name: '火之战士', attribute: 'fire', emoji: '⚔️', skillRange: { width: 1, height: 4 } }, // 1x4 竖条
-    { id: 1, name: '水之法师', attribute: 'water', emoji: '🧙', skillRange: { width: 2, height: 3 } }, // 2x3 矩形
-    { id: 2, name: '木之德鲁伊', attribute: 'wood', emoji: '🌳', skillRange: { width: 2, height: 4 } }, // 2x4 矩形
-    { id: 3, name: '光之圣骑士', attribute: 'light', emoji: '🛡️', skillRange: { width: 3, height: 3 } }, // 3x3 正方形
-    { id: 4, name: '暗之刺客', attribute: 'dark', emoji: '🗡️', skillRange: { width: 4, height: 1 } }, // 4x1 横条
-    { id: 5, name: '火之法师', attribute: 'fire', emoji: '🔥', skillRange: { width: 2, height: 1 } } // 2x1 横条
+    { 
+        id: 0, 
+        name: '火之战士', 
+        attribute: 'fire', 
+        emoji: '⚔️', 
+        skillRange: { width: 1, height: 4 },
+        skillDescription: '消除范围内符石，使用后随机将5个非火焰符石变为火焰符石'
+    },
+    { 
+        id: 1, 
+        name: '火魔法使', 
+        attribute: 'fire', 
+        emoji: '🧙', 
+        skillRange: { width: 3, height: 1 },
+        skillDescription: '消除范围内符石，范围内每个火焰符石周围1格内的符石会变为火焰符石'
+    },
+    { 
+        id: 2, 
+        name: '火神龙', 
+        attribute: 'fire', 
+        emoji: '🐉', 
+        skillRange: { width: 1, height: 1 },
+        skillDescription: '消除范围内符石，额外消除面板上所有火焰符石，造成消除数量*50的额外伤害'
+    },
+    { 
+        id: 3, 
+        name: '光之圣骑士', 
+        attribute: 'light', 
+        emoji: '🛡️', 
+        skillRange: { width: 3, height: 3 },
+        skillDescription: '消除范围内符石，对敌人造成伤害'
+    },
+    { 
+        id: 4, 
+        name: '暗之刺客', 
+        attribute: 'dark', 
+        emoji: '🗡️', 
+        skillRange: { width: 4, height: 1 },
+        skillDescription: '消除范围内符石，对敌人造成伤害'
+    },
+    { 
+        id: 5, 
+        name: '火之法师', 
+        attribute: 'fire', 
+        emoji: '🔥', 
+        skillRange: { width: 2, height: 1 },
+        skillDescription: '消除范围内符石，使用后生成1个烈火符石'
+    }
 ];
 
 // 加载配置文件
 async function loadConfig() {
     try {
         const response = await fetch('config.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         gameConfigData = await response.json();
+        console.log('配置加载成功:', gameConfigData);
+        
+        // 验证配置数据
+        if (!gameConfigData.levels || !Array.isArray(gameConfigData.levels) || gameConfigData.levels.length === 0) {
+            console.warn('配置数据无效，使用默认配置');
+            return getDefaultConfig();
+        }
+        
+        // 读取全局玩家初始生命值配置
+        if (gameConfigData.player && gameConfigData.player.initialHp) {
+            playerMaxHp = gameConfigData.player.initialHp;
+            console.log('玩家初始生命值:', playerMaxHp);
+        }
+        
         return gameConfigData;
     } catch (error) {
         console.error('加载配置文件失败:', error);
         // 使用默认配置
-        return {
-            levels: [{
-                id: 1,
-                name: "默认关卡",
-                enemy: {
-                    name: "暗影巫妖",
-                    emoji: "👹",
-                    maxHp: 500,
-                    minDamage: 500,
-                    maxDamage: 1000
-                },
-                player: {
-                    maxHp: 10000
-                }
-            }]
-        };
+        return getDefaultConfig();
     }
+}
+
+// 获取默认配置
+function getDefaultConfig() {
+    return {
+        player: {
+            initialHp: 10000
+        },
+        levels: [{
+            id: 1,
+            name: "默认关卡",
+            enemy: {
+                id: "default_enemy",
+                name: "暗影巫妖",
+                emoji: "👹",
+                maxHp: 500,
+                minDamage: 500,
+                maxDamage: 1000,
+                attackCooldown: 1
+            }
+        }]
+    };
 }
 
 // 初始化关卡选择界面
 function initLevelSelect() {
     const levelsList = document.getElementById('levelsList');
+    if (!levelsList) {
+        console.error('levelsList元素不存在');
+        return;
+    }
+    
     levelsList.innerHTML = '';
     
     if (!gameConfigData || !gameConfigData.levels) {
@@ -100,37 +172,83 @@ function initLevelSelect() {
             <div class="level-description">${level.description || ''}</div>
             <div class="level-stats">
                 <span>敌人HP: ${level.enemy.maxHp.toLocaleString()}</span>
-                <span>玩家HP: ${level.player.maxHp.toLocaleString()}</span>
+                <span>玩家HP: ${playerMaxHp.toLocaleString()}</span>
             </div>
         `;
-        levelCard.addEventListener('click', () => startLevel(level));
+        levelCard.addEventListener('click', () => {
+            console.log('点击关卡:', level.name);
+            startLevel(level);
+        });
         levelsList.appendChild(levelCard);
     });
-    
+}
+
+// 初始化关卡选择界面的按钮事件（只初始化一次）
+function initLevelSelectButtons() {
     // 重新加载配置按钮
-    document.getElementById('reloadConfigBtn').addEventListener('click', async () => {
-        await loadConfig();
-        initLevelSelect();
-        alert('配置已重新加载！');
-    });
+    const reloadBtn = document.getElementById('reloadConfigBtn');
+    if (reloadBtn) {
+        // 移除旧的事件监听器（通过克隆节点）
+        const newReloadBtn = reloadBtn.cloneNode(true);
+        reloadBtn.parentNode.replaceChild(newReloadBtn, reloadBtn);
+        newReloadBtn.addEventListener('click', async () => {
+            await loadConfig();
+            initLevelSelect();
+            alert('配置已重新加载！');
+        });
+    }
     
     // 返回游戏按钮
     const backToGameBtn = document.getElementById('backToGameBtn');
     if (backToGameBtn) {
-        backToGameBtn.addEventListener('click', backToGame);
+        // 移除旧的事件监听器（通过克隆节点）
+        const newBackBtn = backToGameBtn.cloneNode(true);
+        backToGameBtn.parentNode.replaceChild(newBackBtn, backToGameBtn);
+        newBackBtn.addEventListener('click', () => {
+            console.log('返回游戏');
+            backToGame();
+        });
     }
 }
 
 // 开始关卡
 function startLevel(level) {
+    console.log('开始关卡:', level);
+    
+    if (!level || !level.enemy) {
+        console.error('关卡数据无效:', level);
+        return;
+    }
+    
+    // 验证关卡数据完整性
+    if (!level.enemy.maxHp) {
+        console.error('关卡敌人配置无效:', level);
+        return;
+    }
+    
     currentLevel = level;
     gameState.currentEnemy = level.enemy;
     gameState.enemyHp = level.enemy.maxHp;
-    gameState.playerHp = level.player.maxHp;
+    
+    // 只在第一次进入游戏时设置玩家生命值，后续关卡继承当前生命值
+    if (gameState.playerHp === 0) {
+        gameState.playerHp = playerMaxHp;
+    }
+    // 如果玩家生命值超过最大值，恢复到最大值
+    if (gameState.playerHp > playerMaxHp) {
+        gameState.playerHp = playerMaxHp;
+    }
     
     // 隐藏关卡选择界面，显示游戏界面
-    document.getElementById('levelSelectScreen').style.display = 'none';
-    document.getElementById('gameContainer').style.display = 'flex';
+    const levelSelectScreen = document.getElementById('levelSelectScreen');
+    const gameContainer = document.getElementById('gameContainer');
+    
+    if (levelSelectScreen) {
+        levelSelectScreen.style.display = 'none';
+    }
+    if (gameContainer) {
+        gameContainer.style.display = 'flex';
+    }
     
     // 更新敌人显示
     updateEnemyDisplay();
@@ -326,72 +444,14 @@ function useHeroSkill(centerRow, centerCol) {
     const hero = gameState.heroes[gameState.selectedHero];
     const skillArea = getSkillArea(centerRow, centerCol, gameState.selectedHero);
     
-    // 收集要消除的符石
-    const gemsToRemove = [];
-    skillArea.forEach(([r, c]) => {
-        if (isValidPosition(r, c)) {
-            gemsToRemove.push([r, c, gameState.board[r][c]]);
-        }
-    });
-
-    // 计算所有会被消除的位置（包括炸弹触发的相邻位置）
-    const allRemovedPositions = calculateAllRemovedPositions(gemsToRemove.map(([r, c]) => [r, c]));
-    
-    // 计算伤害（只计算有属性的符石，排除炸弹和烈火）
-    const allRemovedGems = allRemovedPositions.map(([r, c]) => {
-        const type = gameState.board[r][c];
-        return [r, c, type];
-    });
-    const matchingGems = allRemovedGems.filter(([r, c, type]) => 
-        type !== 'bomb' && type !== 'flame' && type === hero.attribute
-    );
-    const damage = calculateDamage(matchingGems.length);
-
-    // 显示伤害
-    showDamage(damage);
-
-    // 消除符石
-    removeGems(gemsToRemove.map(([r, c]) => [r, c]));
-
-    // 火之法师特殊效果：生成烈火符石
-    if (hero.id === 5) {
-        setTimeout(() => {
-            spawnFlameGem();
-        }, 400);
+    // 火魔法使特殊效果：在消除前，将技能范围内火焰符石周围1格内的符石转换为火焰符石
+    if (hero.id === 1) {
+        convertFireAdjacentGems(skillArea);
+        return; // 转换函数内部会处理后续逻辑
     }
-
-    // 延迟执行下落和填充
-    setTimeout(() => {
-        applyGravity();
-        fillEmptySpaces();
-        updateUI();
-        
-        // 对敌人造成伤害
-        if (damage > 0) {
-            gameState.enemyHp = Math.max(0, gameState.enemyHp - damage);
-            updateUI();
-            
-            // 检查胜利条件
-            if (gameState.enemyHp <= 0) {
-                setTimeout(() => {
-                    const enemyName = gameState.currentEnemy ? gameState.currentEnemy.name : '敌人';
-                    const rewards = currentLevel && currentLevel.rewards ? 
-                        `\n获得奖励：金币 ${currentLevel.rewards.gold}，经验 ${currentLevel.rewards.exp}` : '';
-                    alert(`胜利！你击败了${enemyName}！${rewards}`);
-                    resetGame();
-                }, 500);
-                return;
-            }
-        }
-
-        // 重置选择状态
-        resetSelection();
-        
-        // 切换到敌人回合（这里可以添加敌人AI）
-        setTimeout(() => {
-            enemyTurn();
-        }, 1000);
-    }, 500);
+    
+    // 其他英雄的正常技能逻辑
+    executeSkillAfterConversion(hero, skillArea);
 }
 
 // 计算所有会被消除的位置（包括炸弹触发的相邻位置和烈火符石的整行整列）
@@ -542,6 +602,229 @@ function spawnFlameGem() {
     
     gameState.board[targetRow][targetCol] = 'flame';
     updateUI();
+}
+
+// 将技能范围内火焰符石周围1格内的符石转换为火焰符石（火魔法使技能）
+function convertFireAdjacentGems(skillArea) {
+    const hero = gameState.heroes[gameState.selectedHero];
+    const positionsToConvert = new Set();
+    
+    // 遍历技能范围内的所有位置
+    skillArea.forEach(([r, c]) => {
+        if (isValidPosition(r, c) && gameState.board[r][c] === 'fire') {
+            // 找到火焰符石，获取其上下左右1格内的位置
+            const adjacent = getAdjacentPositions(r, c);
+            adjacent.forEach(([adjRow, adjCol]) => {
+                // 只转换非火焰符石、非炸弹、非烈火符石的位置
+                const gemType = gameState.board[adjRow][adjCol];
+                if (gemType && gemType !== 'fire' && gemType !== 'bomb' && gemType !== 'flame') {
+                    positionsToConvert.add(`${adjRow},${adjCol}`);
+                }
+            });
+        }
+    });
+    
+    // 转换所有符合条件的符石
+    if (positionsToConvert.size > 0) {
+        positionsToConvert.forEach((posStr, index) => {
+            setTimeout(() => {
+                const [row, col] = posStr.split(',').map(Number);
+                const gem = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (gem) {
+                    // 添加转换动画
+                    gem.classList.add('converting-to-fire');
+                    // 更新棋盘数据
+                    gameState.board[row][col] = 'fire';
+                }
+            }, index * 50); // 错开动画时间
+        });
+        
+        // 等待转换动画完成后继续执行技能逻辑
+        setTimeout(() => {
+            updateUI();
+            // 继续执行技能消除逻辑
+            executeSkillAfterConversion(hero, skillArea);
+        }, positionsToConvert.size * 50 + 300);
+    } else {
+        // 如果没有需要转换的符石，直接执行技能逻辑
+        executeSkillAfterConversion(hero, skillArea);
+    }
+}
+
+// 执行技能消除逻辑（火魔法使转换后的后续处理）
+function executeSkillAfterConversion(hero, skillArea) {
+    // 收集要消除的符石
+    const gemsToRemove = [];
+    skillArea.forEach(([r, c]) => {
+        if (isValidPosition(r, c)) {
+            gemsToRemove.push([r, c, gameState.board[r][c]]);
+        }
+    });
+
+    // 计算所有会被消除的位置（包括炸弹触发的相邻位置）
+    const allRemovedPositions = calculateAllRemovedPositions(gemsToRemove.map(([r, c]) => [r, c]));
+    
+    // 火神龙特殊效果：额外消除所有火焰符石
+    let extraFireGemsRemoved = 0;
+    const allFireGemsPositions = [];
+    if (hero.id === 2) {
+        // 收集所有火焰符石的位置（不包括技能范围内的，因为会被正常消除）
+        for (let row = 0; row < GAME_CONFIG.BOARD_SIZE; row++) {
+            for (let col = 0; col < GAME_CONFIG.BOARD_SIZE; col++) {
+                // 检查是否在技能范围内
+                const inSkillArea = skillArea.some(([r, c]) => r === row && c === col);
+                if (!inSkillArea && gameState.board[row][col] === 'fire') {
+                    allFireGemsPositions.push([row, col]);
+                    extraFireGemsRemoved++;
+                }
+            }
+        }
+    }
+
+    // 计算所有会被消除的位置（包括炸弹触发的相邻位置）
+    let finalRemovedPositions = allRemovedPositions;
+    if (hero.id === 2 && allFireGemsPositions.length > 0) {
+        // 将额外消除的火焰符石位置也加入消除列表
+        const extraPositions = calculateAllRemovedPositions(allFireGemsPositions);
+        // 合并位置，使用Set去重
+        const allPositionsSet = new Set();
+        allRemovedPositions.forEach(([r, c]) => allPositionsSet.add(`${r},${c}`));
+        extraPositions.forEach(([r, c]) => allPositionsSet.add(`${r},${c}`));
+        finalRemovedPositions = Array.from(allPositionsSet).map(posStr => {
+            const [r, c] = posStr.split(',').map(Number);
+            return [r, c];
+        });
+    }
+    
+    // 计算伤害（只计算有属性的符石，排除炸弹和烈火）
+    const allRemovedGems = finalRemovedPositions.map(([r, c]) => {
+        const type = gameState.board[r][c];
+        return [r, c, type];
+    });
+    const matchingGems = allRemovedGems.filter(([r, c, type]) => 
+        type !== 'bomb' && type !== 'flame' && type === hero.attribute
+    );
+    let damage = calculateDamage(matchingGems.length);
+    
+    // 火神龙额外伤害：额外消除的火焰符石数量 * 50
+    if (hero.id === 2 && extraFireGemsRemoved > 0) {
+        const extraDamage = extraFireGemsRemoved * 50;
+        damage += extraDamage;
+    }
+
+    // 显示伤害
+    showDamage(damage);
+
+    // 消除符石（包括额外消除的火焰符石）
+    const allGemsToRemove = [...gemsToRemove.map(([r, c]) => [r, c])];
+    if (hero.id === 2 && allFireGemsPositions.length > 0) {
+        allGemsToRemove.push(...allFireGemsPositions);
+    }
+    removeGems(allGemsToRemove);
+
+    // 火之法师特殊效果：生成烈火符石
+    if (hero.id === 5) {
+        setTimeout(() => {
+            spawnFlameGem();
+        }, 400);
+    }
+
+    // 延迟执行下落和填充
+    setTimeout(() => {
+        applyGravity();
+        fillEmptySpaces();
+        updateUI();
+        
+        // 火之战士特殊效果：将随机5个非火焰符石变成火焰符石
+        if (hero.id === 0) {
+            setTimeout(() => {
+                convertGemsToFire(5);
+            }, 200);
+        }
+        
+        // 对敌人造成伤害
+        if (damage > 0) {
+            gameState.enemyHp = Math.max(0, gameState.enemyHp - damage);
+            updateUI();
+            
+            // 检查胜利条件
+            if (gameState.enemyHp <= 0) {
+                setTimeout(() => {
+                    const enemyName = gameState.currentEnemy ? gameState.currentEnemy.name : '敌人';
+                    const rewards = currentLevel && currentLevel.rewards ? 
+                        `\n获得奖励：金币 ${currentLevel.rewards.gold}，经验 ${currentLevel.rewards.exp}` : '';
+                    alert(`胜利！你击败了${enemyName}！${rewards}`);
+                    // 进入下一关
+                    goToNextLevel();
+                }, 500);
+                return;
+            }
+        }
+
+        // 重置选择状态
+        resetSelection();
+        
+        // 切换到敌人回合（这里可以添加敌人AI）
+        setTimeout(() => {
+            enemyTurn();
+        }, 1000);
+    }, 500);
+}
+
+// 将随机N个非火焰符石转换为火焰符石
+function convertGemsToFire(count) {
+    // 收集所有非火焰符石的位置
+    const nonFirePositions = [];
+    for (let row = 0; row < GAME_CONFIG.BOARD_SIZE; row++) {
+        for (let col = 0; col < GAME_CONFIG.BOARD_SIZE; col++) {
+            const gemType = gameState.board[row][col];
+            // 排除火焰符石、炸弹、烈火符石和空位置
+            if (gemType && gemType !== 'fire' && gemType !== 'bomb' && gemType !== 'flame') {
+                nonFirePositions.push([row, col]);
+            }
+        }
+    }
+    
+    // 如果可转换的位置少于需要的数量，使用所有可转换的位置
+    const convertCount = Math.min(count, nonFirePositions.length);
+    
+    if (convertCount === 0) {
+        return; // 没有可转换的符石
+    }
+    
+    // 随机选择要转换的位置
+    const positionsToConvert = [];
+    const availablePositions = [...nonFirePositions];
+    
+    for (let i = 0; i < convertCount; i++) {
+        const randomIndex = Math.floor(Math.random() * availablePositions.length);
+        positionsToConvert.push(availablePositions[randomIndex]);
+        availablePositions.splice(randomIndex, 1);
+    }
+    
+    // 转换符石并添加转换动画
+    let completedCount = 0;
+    positionsToConvert.forEach(([row, col], index) => {
+        setTimeout(() => {
+            const gem = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (gem) {
+                // 添加转换动画
+                gem.classList.add('converting-to-fire');
+                
+                // 更新棋盘数据
+                gameState.board[row][col] = 'fire';
+                
+                // 延迟更新UI，让动画完成
+                setTimeout(() => {
+                    completedCount++;
+                    // 所有转换完成后统一更新UI
+                    if (completedCount === positionsToConvert.length) {
+                        updateUI();
+                    }
+                }, 300);
+            }
+        }, index * 50); // 错开动画时间，让转换更有层次感
+    });
 }
 
 // 消除符石
@@ -706,19 +989,26 @@ function updateUI() {
     // 更新玩家血条
     const playerHpFill = document.getElementById('playerHpFill');
     const playerHpText = document.getElementById('playerHpText');
-    if (currentLevel) {
-        const playerMaxHp = currentLevel.player.maxHp;
-        const playerHpPercent = (gameState.playerHp / playerMaxHp) * 100;
-        playerHpFill.style.width = `${playerHpPercent}%`;
-        playerHpText.textContent = `${gameState.playerHp}/${playerMaxHp}`;
-    }
+    const playerHpPercent = (gameState.playerHp / playerMaxHp) * 100;
+    playerHpFill.style.width = `${playerHpPercent}%`;
+    playerHpText.textContent = `${gameState.playerHp}/${playerMaxHp}`;
 }
 
 // 显示技能范围预览（右侧面板）
 function showSkillRangePreview(hero) {
     const previewGrid = document.getElementById('previewGrid');
     const previewPanel = document.getElementById('skillPreviewPanel');
+    const skillDescription = document.getElementById('skillDescription');
+    
     previewGrid.innerHTML = '';
+    
+    // 显示技能效果描述
+    if (skillDescription && hero.skillDescription) {
+        skillDescription.textContent = hero.skillDescription;
+        skillDescription.style.display = 'block';
+    } else if (skillDescription) {
+        skillDescription.style.display = 'none';
+    }
     
     const range = hero.skillRange;
     const maxSize = Math.max(range.width, range.height, 4); // 至少4x4的预览网格
@@ -816,14 +1106,58 @@ function enemyTurn() {
     }, 1000);
 }
 
+// 获取下一关
+function getNextLevel() {
+    if (!gameConfigData || !gameConfigData.levels || !currentLevel) {
+        console.log('无法获取下一关: 配置数据或当前关卡为空');
+        return null;
+    }
+    
+    const currentLevelIndex = gameConfigData.levels.findIndex(level => level.id === currentLevel.id);
+    console.log('当前关卡索引:', currentLevelIndex, '总关卡数:', gameConfigData.levels.length);
+    
+    if (currentLevelIndex === -1) {
+        console.warn('未找到当前关卡在配置中的位置');
+        return null;
+    }
+    
+    if (currentLevelIndex >= gameConfigData.levels.length - 1) {
+        console.log('已经是最后一关');
+        return null; // 没有下一关
+    }
+    
+    const nextLevel = gameConfigData.levels[currentLevelIndex + 1];
+    console.log('下一关:', nextLevel);
+    return nextLevel;
+}
+
+// 进入下一关
+function goToNextLevel() {
+    const nextLevel = getNextLevel();
+    
+    if (nextLevel) {
+        // 有下一关，进入下一关
+        setTimeout(() => {
+            startLevel(nextLevel);
+        }, 500);
+    } else {
+        // 没有下一关，显示通关信息
+        setTimeout(() => {
+            alert('恭喜！你已经通关所有关卡！');
+            // 返回关卡选择界面
+            showLevelSelect();
+        }, 500);
+    }
+}
+
 // 重置游戏
 function resetGame() {
     if (currentLevel) {
         gameState.enemyHp = currentLevel.enemy.maxHp;
-        gameState.playerHp = currentLevel.player.maxHp;
+        gameState.playerHp = playerMaxHp; // 使用全局配置的玩家最大生命值
     } else {
         gameState.enemyHp = 500;
-        gameState.playerHp = 10000;
+        gameState.playerHp = playerMaxHp;
     }
     gameState.isPlayerTurn = true;
     resetSelection();
@@ -856,9 +1190,18 @@ function setupEventListeners() {
 
 // 显示关卡选择界面
 function showLevelSelect() {
-    document.getElementById('levelSelectScreen').style.display = 'flex';
-    document.getElementById('gameContainer').style.display = 'none';
+    const levelSelectScreen = document.getElementById('levelSelectScreen');
+    const gameContainer = document.getElementById('gameContainer');
+    
+    if (levelSelectScreen) {
+        levelSelectScreen.style.display = 'flex';
+    }
+    if (gameContainer) {
+        gameContainer.style.display = 'none';
+    }
+    
     initLevelSelect();
+    initLevelSelectButtons();
 }
 
 // 返回游戏
@@ -869,33 +1212,33 @@ function backToGame() {
 
 // 启动应用
 async function startApp() {
-    await loadConfig();
+    const config = await loadConfig();
+    gameConfigData = config; // 确保gameConfigData被设置
+    
+    // 确保玩家配置已读取（如果loadConfig中没有读取，这里再次读取）
+    if (gameConfigData && gameConfigData.player && gameConfigData.player.initialHp) {
+        playerMaxHp = gameConfigData.player.initialHp;
+    }
+    
+    // 初始化关卡选择界面的按钮事件
+    initLevelSelectButtons();
     
     // 初始化关卡选择界面（但不显示）
     initLevelSelect();
     
     // 自动加载第一个关卡并开始游戏
     if (gameConfigData && gameConfigData.levels && gameConfigData.levels.length > 0) {
+        console.log('开始第一关:', gameConfigData.levels[0]);
         startLevel(gameConfigData.levels[0]);
     } else {
+        console.warn('没有找到关卡配置，使用默认关卡');
         // 如果没有关卡配置，使用默认配置
-        const defaultLevel = {
-            id: 1,
-            name: "默认关卡",
-            enemy: {
-                id: "default_enemy",
-                name: "暗影巫妖",
-                emoji: "👹",
-                maxHp: 500,
-                minDamage: 500,
-                maxDamage: 1000,
-                attackCooldown: 1
-            },
-            player: {
-                maxHp: 10000
-            }
-        };
-        startLevel(defaultLevel);
+        const defaultConfig = getDefaultConfig();
+        gameConfigData = defaultConfig;
+        if (defaultConfig.player && defaultConfig.player.initialHp) {
+            playerMaxHp = defaultConfig.player.initialHp;
+        }
+        startLevel(defaultConfig.levels[0]);
     }
 }
 

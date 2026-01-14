@@ -1,4 +1,7 @@
 {
+  "player": {
+    "initialHp": 10000
+  },
   "levels": [
     {
       "id": 1,
@@ -12,9 +15,6 @@
         "minDamage": 500,
         "maxDamage": 1000,
         "attackCooldown": 1
-      },
-      "player": {
-        "maxHp": 10000
       },
       "rewards": {
         "gold": 100,
@@ -34,9 +34,6 @@
         "maxDamage": 1500,
         "attackCooldown": 1
       },
-      "player": {
-        "maxHp": 40000
-      },
       "rewards": {
         "gold": 200,
         "exp": 100
@@ -55,9 +52,6 @@
         "maxDamage": 2000,
         "attackCooldown": 1
       },
-      "player": {
-        "maxHp": 5000
-      },
       "rewards": {
         "gold": 350,
         "exp": 200
@@ -75,9 +69,6 @@
         "minDamage": 2000,
         "maxDamage": 3000,
         "attackCooldown": 1
-      },
-      "player": {
-        "maxHp": 6000
       },
       "rewards": {
         "gold": 500,
